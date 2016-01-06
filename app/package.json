@@ -1,0 +1,39 @@
+{
+  "name": "ex4db",
+  "version": "0.0.1",
+  "description": "Sample web application using relational database",
+  "main": "index.js",
+  "scripts": {
+    "start": "node ./dest/server/app.js",
+    "test": "mocha --require ./dest/test/setup.js ./dest/test/component.js"
+  },
+  "author": "sekai013",
+  "license": "MIT",
+  "dependencies": {
+    "babel-polyfill": "^6.3.14",
+    "babel-preset-es2015": "^6.3.13",
+    "babel-preset-react": "^6.3.13",
+    "babelify": "^7.2.0",
+    "browserify": "^12.0.1",
+    "co-sqlite3": "^0.1.3",
+    "co-views": "^2.1.0",
+    "ejs": "^2.3.4",
+    "expect": "^1.13.4",
+    "expect-jsx": "^2.2.2",
+    "gulp": "^3.9.0",
+    "gulp-babel": "^6.1.1",
+    "gulp-mocha": "^2.2.0",
+    "gulp-plumber": "^1.0.1",
+    "jquery": "^2.1.4",
+    "jsdom": "^7.2.2",
+    "koa": "^1.1.2",
+    "koa-router": "^5.3.0",
+    "koa-static": "^1.5.2",
+    "mocha": "^2.3.4",
+    "react": "^0.14.5",
+    "react-dom": "^0.14.5",
+    "sinon": "^1.17.2",
+    "vinyl-source-stream": "^1.1.0",
+    "watchify": "^3.6.1"
+  }
+}
