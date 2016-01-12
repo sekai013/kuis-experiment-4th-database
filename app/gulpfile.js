@@ -32,6 +32,9 @@ gulp.task('build-client', () => {
 })
 
 gulp.task('build-server', () => {
+  gulp.src('./src/config/config.js')
+      .pipe(plumber())
+      .pipe(gulp.dest('./dest/config'))
   return gulp.src('./src/server/*.js')
              .pipe(plumber())
              .pipe(babel())
@@ -61,7 +64,7 @@ gulp.task('watch', ['enable-watch-mode', 'build'], () => {
   gulp.watch('src/client/**/*.css', ['css'])
   gulp.watch('src/views/*.ejs', ['view'])
   gulp.watch('src/client/**/*.js', ['build-client', 'build-test'])
-  gulp.watch('src/server/**/*.js', ['build-server'])
+  gulp.watch(['src/server/**/*.js', 'src/config/config.js'], ['build-server'])
   gulp.watch('src/test/*.js', ['build-test'])
 })
 
