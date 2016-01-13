@@ -224,10 +224,10 @@ describe('ThreadBox', () => {
     const rendered = renderer.getRenderOutput()
     const expected = (
       <div className="threadBox">
-        <div class="panel panel-default">
-          <div class="panel-heading">
+        <div className="panel panel-default">
+          <div className="panel-heading">
             <nav>
-              <ul class="pagination">
+              <ul className="pagination">
                 <li className="disabled">
                   <a href="/#threads/page/0" aria-label="Previous">
                     <span aria-hidden="true">&laquo;</span>
@@ -245,7 +245,7 @@ describe('ThreadBox', () => {
             </nav>
           </div>
        
-          <ThreadList size={30} page={1} isInDashboard={false} />
+          <ThreadList size={30} page={1} items={[]} isInDashboard={false} />
         </div>
         <ThreadForm onSubmitForm={() => {}} />
       </div>
