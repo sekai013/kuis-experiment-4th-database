@@ -46,6 +46,18 @@ const getDB = function *(next) {
   yield next
 }
 
+const auth = function *(next) {
+  if (this.isAuthenticated()) {
+    yield next
+  } else {
+    this.body = {
+      status: 401,
+      message: 'Authorization Required'
+    }
+    this.throw('Authorization Required', 401)
+  }
+}
+
 router.get('/', getDB, function *() {
   this.body = yield render('index', { title: 'Quizhub' })
 })
@@ -61,5 +73,33 @@ router.get('/auth/twitter/callback', passport.authenticate('twitter', {
   successRedirect: '/',
   failureRedirect: '/'
 }))
+
+router.get('/api/threads', getDB, function *() {
+  this.body = yield this.DB.all('SELECT * FROM threads NATURAL JOIN create_thread')
+})
+
+router.post('/api/threads/create', auth, getDB, function *() {
+  const threads = yield this.DB.all('SELECT * FROM threads')
+  const threadId = threads.length + 1
+  const title = this.request.body.title
+  try {
+    const stmt1 = yield this.DB.prepare('INSERT INTO threads VALUES(?, ?)')
+    yield stmt1.run(threadId, title)
+    stmt1.finalize()
+    const stmt2 = yield this.DB.prepare('INSERT INTO create_thread VALUES(?, ?, ?)')
+    yield stmt2.run(passport.id, threadId, Date.now())
+    stmt2.finalize()
+    this.body = { threadId: threadId }
+  } catch (error) {
+    this.status = 500
+    this.body = { status: 500, message: 'Internal Server Error' }
+    const stmt3 = yield this.DB.prepare('DELETE FROM threads WHERE threadId = ?')
+    yield stmt3.run(threadId)
+    stmt3.finalize()
+    const stmt4 = yield this.DB.prepare('DELETE FROM create_thread WHERE userId = ? AND threadId = ?')
+    yield stmt4.run(userId, threadId)
+    stmt4.finalize()
+  }
+})
 
 module.exports = router
