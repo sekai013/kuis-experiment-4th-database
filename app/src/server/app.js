@@ -7,9 +7,7 @@ const session = require('koa-generic-session')
 const bodyParser = require('koa-bodyparser')
 const passport = require('koa-passport')
 
-
 const router = require('./router')
-const api = require('./api')
 const config = require('../config/config')
 const app = new Koa()
 
@@ -34,7 +32,6 @@ app.use(function *(next) {
 // Routing
 
 app.use(serve(path.resolve(__dirname, '../public')))
-app.use(api.routes())
 app.use(router.routes())
 
 // Server Running
