@@ -74,19 +74,19 @@ describe('ThreadList', () => {
     {
       threadId: 1,
       title: 'Test Thread 01',
-      creater: 'Foo',
+      userId: 'Foo',
       timestamp: 1452215370864
     },
     {
       threadId: 2,
       title: 'Test Thread 02',
-      creater: 'Bar',
+      userId: 'Bar',
       timestamp: 1452215370864
     },
     {
       threadId: 3,
       title: 'Test Thread 03',
-      creater: 'Baz',
+      userId: 'Baz',
       timestamp: 1452215370864
     }
   ]
@@ -229,7 +229,7 @@ describe('ThreadBox', () => {
             <nav>
               <ul className="pagination">
                 <li className="disabled">
-                  <a href="/#threads/page/0" aria-label="Previous">
+                  <a href="/#threads/page/1" aria-label="Previous">
                     <span aria-hidden="true">&laquo;</span>
                   </a>
                 </li>
@@ -237,7 +237,7 @@ describe('ThreadBox', () => {
                   <a href="/#threads/page/1">1</a>
                 </li>
                 <li className="disabled">
-                  <a href="/#threads/page/2" aria-label="Next">
+                  <a href="/#threads/page/1" aria-label="Next">
                     <span aria-hidden="true">&raquo;</span>
                   </a>
                 </li>
@@ -245,7 +245,7 @@ describe('ThreadBox', () => {
             </nav>
           </div>
        
-          <ThreadList size={30} page={1} items={[]} isInDashboard={false} />
+          <ThreadList size={10} page={1} items={[]} isInDashboard={false} />
         </div>
         <ThreadForm onSubmitForm={() => {}} />
       </div>
