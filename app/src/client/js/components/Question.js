@@ -20,6 +20,13 @@ module.exports = class Question extends React.Component {
     this.setState({ isShownAnswer: !this.state.isShownAnswer })
   }
 
+  onClickDelete (event) {
+    event.preventDefault()
+    if (this.props.isEditActivated && typeof this.props.onClickDelete === 'function') {
+      this.props.onClickDelete(this.props)
+    }
+  }
+
   render () {
     const answer = (
       <div className="answer">
@@ -30,8 +37,11 @@ module.exports = class Question extends React.Component {
       return <p key={i}>{text}</p>
     })
     const editBtn = this.props.isEditActivated
-                  ? <a href={`/#questions/${this.props.questionId}/edit`} className="btn btn-default">Edit Question</a>
+                  ? <a href={`/#questions/${this.props.questionId}/edit`} className="btn btn-default">Edit</a>
                   : null
+    const deleteBtn = this.props.isEditActivated
+                    ? <button className="btn btn-default" onClick={this.onClickDelete.bind(this)}>Delete</button>
+                    : null
     return (
       <div className="question panel panel-default">
         <div className="panel-heading">
@@ -59,6 +69,7 @@ module.exports = class Question extends React.Component {
                 {this.state.isShownAnswer ? 'Hide Answer' : 'Show Answer'}
               </button>
               {editBtn}
+              {deleteBtn}
             </div>
           </div>
           {this.state.isShownAnswer ? answer : ''}

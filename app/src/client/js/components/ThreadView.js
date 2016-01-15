@@ -55,6 +55,28 @@ module.exports = class ThreadView extends React.Component {
     this.fetchRequests(nextProps)
   }
 
+  onClickDelete (childProps) {
+    ajax({
+      url: `http://${location.hostname}:${location.port}/api/threads/${this.props.threadId}/questions/${childProps.index}/delete`,
+      method: 'POST',
+      success: (data) => {
+        this.setState({
+          message: `Question ${childProps.index} Deleted.`,
+          messageType: 'success'
+        })
+        this.fetchQuestions()
+        setTimeout(() => { this.setState({ message: '', messageType: '' }) }, 1000)
+      },
+      error: (xhr, status, error) => {
+        console.error(xhr.status, error.toString())
+        this.setState({
+          message: 'Delete Question: Failed ;-( Please try again later.',
+          messageType: 'warning'
+        })
+      }
+    })
+  }
+
   onSubmitForm (childState, callback) {
     ajax({
       url: `http://${location.hostname}:${location.port}/api/threads/${this.props.threadId}/questions/create`,
@@ -63,7 +85,6 @@ module.exports = class ThreadView extends React.Component {
       success: (data) => {
         this.setState({ message: 'Created!', messageType: 'success' })
         this.fetchQuestions()
-        callback()
         setTimeout(() => { this.setState({ message: '', messageType: '' }) }, 1000)
       },
       error: (xhr, status, error) => {
@@ -105,7 +126,7 @@ module.exports = class ThreadView extends React.Component {
             </a>
           </li>
         </ul>
-        {this.props.mode === 'questions' ? <QuestionList questions={this.state.questions} isEditActivated={this.state.isCreater} /> : null}
+        {this.props.mode === 'questions' ? <QuestionList questions={this.state.questions} onClickDelete={this.onClickDelete.bind(this)} isEditActivated={this.state.isCreater} /> : null}
         {msg}
         {this.state.isCreater ? <QuestionForm isEditMode={false} onSubmitForm={this.onSubmitForm.bind(this)} /> : null}
       </div>

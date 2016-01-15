@@ -1,10 +1,30 @@
 'use strict'
 const React = require('react')
 const ReactDOM = require('react-dom')
+const ajax = require('jquery').ajax
+
 module.exports = class QuestionForm extends React.Component {
   constructor (props) {
     super(props)
     this.state = { text: this.props.text || '', answer: this.props.answer || '' }
+  }
+
+  componentDidMount () {
+    if (this.props.isEditMode) {
+      ajax({
+        url: `http://${location.hostname}:${location.port}/api/questions/${this.props.questionId}`,
+        dataType: 'json',
+        success: (data) => {
+          this.setState({
+            text: data.question.text,
+            answer: data.question.answer
+          })
+        },
+        error: (xhr, status, error) => {
+          console.error(xhr.status, error.toString())
+        }
+      })
+    }
   }
 
   onChangeText (event) {
@@ -19,7 +39,18 @@ module.exports = class QuestionForm extends React.Component {
     event.preventDefault()
     if (! (this.state.text.trim() && this.state.answer.trim())) return
     if (this.props.isEditMode) {
-      // post to server
+      ajax({
+        url: `http://${location.hostname}:${location.port}/api/questions/${this.props.questionId}/edit`,
+        method: 'POST',
+        dataType: 'json',
+        data: this.state,
+        success: (data) => {
+          window.location = `/#threads/${data.threadId}`
+        },
+        error: (xhr, status, error) => {
+          console.error(xhr.status, error.toString())
+        }
+      })
     } else {
       if (typeof this.props.onSubmitForm !== 'function') return
       this.props.onSubmitForm(this.state, () => {
