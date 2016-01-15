@@ -75,21 +75,28 @@ router.get('/auth/twitter/callback', passport.authenticate('twitter', {
 }))
 
 router.get('/api/threads', getDB, function *() {
-  this.body = yield this.DB.all('SELECT * FROM threads NATURAL JOIN create_thread')
+  try {
+    this.body = yield this.DB.all(
+      'SELECT * FROM threads NATURAL JOIN create_thread ORDER BY timestamp DESC'
+    )
+  } catch (error) {
+    this.status = 500
+    this.body = { status: 500, message: 'Internal Server Error' }
+  }
 })
 
 router.post('/api/threads/create', auth, getDB, function *() {
-  const threads = yield this.DB.all('SELECT * FROM threads')
-  const threadId = threads.length + 1
-  const title = this.request.body.title
   try {
+    const threads = yield this.DB.all('SELECT * FROM threads')
+    const threadId = threads.length + 1
+    const title = this.request.body.title
     const stmt1 = yield this.DB.prepare('INSERT INTO threads VALUES(?, ?)')
     yield stmt1.run(threadId, title)
     stmt1.finalize()
     const stmt2 = yield this.DB.prepare('INSERT INTO create_thread VALUES(?, ?, ?)')
     yield stmt2.run(passport.id, threadId, Date.now())
     stmt2.finalize()
-    this.body = { threadId: threadId }
+    this.body = { status: 200, threadId: threadId }
   } catch (error) {
     this.status = 500
     this.body = { status: 500, message: 'Internal Server Error' }
@@ -99,6 +106,85 @@ router.post('/api/threads/create', auth, getDB, function *() {
     const stmt4 = yield this.DB.prepare('DELETE FROM create_thread WHERE userId = ? AND threadId = ?')
     yield stmt4.run(userId, threadId)
     stmt4.finalize()
+  }
+})
+
+router.get('/api/threads/:id/questions', getDB, function *() {
+  try {
+    const thread = yield this.DB.get(
+      'SELECT * FROM threads WHERE threadId = ?',
+      [this.params.id]
+    )
+    const creater = yield this.DB.get(
+      'SELECT userId from create_thread where threadId = ?',
+      [this.params.id]
+    )
+    const questions = yield this.DB.all('SELECT * FROM (SELECT * FROM threads WHERE threadId = ?) NATURAL JOIN thread_question NATURAL JOIN (SELECT * FROM questions WHERE isRequest = 0 AND _i > 0)', [this.params.id])
+
+    if (thread) {
+      this.body = {
+        status: 200,
+        questions: questions,
+        isCreater: creater.userId === passport.id,
+        title: thread.title
+      }
+    } else {
+      this.status = 404
+      this.body = { status: 404, message: 'Not Found' }
+    }
+  } catch (error) {
+    this.status = 500
+    this.body = { status: 500, message: 'Internal Server Error' }
+  }
+})
+
+router.post('/api/threads/:id/questions/create', auth, getDB, function *() {
+  try {
+    const creater = yield this.DB.get(
+      'SELECT userId from create_thread where threadId = ?',
+      [this.params.id]
+    )
+
+    if (creater && creater.userId === passport.id) {
+      const questions = yield this.DB.all('SELECT * FROM questions')
+      const questionId = questions.length + 1
+      this.questionId = questionId
+      const questionsInThread = yield this.DB.all(
+        'SELECT * FROM thread_question WHERE threadId = ?',
+        [this.params.id]
+      )
+      const index = questionsInThread.length + 1
+      const stmt1 = yield this.DB.prepare(
+        'INSERT INTO questions VALUES(?, ?, ?, ?, ?)'
+      )
+      yield stmt1.run(questionId,
+                      this.request.body.text,
+                      this.request.body.answer,
+                      index,
+                      0)
+      stmt1.finalize()
+      const stmt2 = yield this.DB.prepare('INSERT INTO thread_question VALUES(?, ?)')
+      yield stmt2.run(this.params.id, questionId)
+      stmt2.finalize()
+      this.body = { status: 200 }
+    } else {
+      this.status = 404
+      this.body = { status: 404, message: 'Not Found' }
+    }
+  } catch (error) {
+    console.error(error.toString());
+    this.status = 500
+    this.body = { status: 500, message: 'Internal Server Error' }
+    if (this.questionId) {
+      const stmt3 = yield this.DB.prepare('DELETE FROM questions WHERE questionId = ?')
+      yield stmt3.run(this.questionId)
+      stmt3.finalize()
+      const stmt4 = yield this.DB.prepare(
+        'DELETE FROM thread_question =  WHERE threadId = ? AND questionId = ?'
+      )
+      yield stmt4.run(this.params.id, this.questionId)
+      stmt4.finalize()
+    }
   }
 })
 
