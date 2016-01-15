@@ -434,8 +434,11 @@ describe('Question', () => {
                 Show Answer
               </button>
               <a href="/#questions/123/edit" className="btn btn-default">
-                Edit Question
+                Edit
               </a>
+              <button className="btn btn-default" onClick={() => {}}>
+                Delete
+              </button>
             </div>
           </div>
         </div>
@@ -519,7 +522,9 @@ describe('QuestionList', () => {
     ]
 
     renderer.render(
-      <QuestionList questions={questions} />
+      <QuestionList questions={questions}
+                    isEditActivated={false}
+                    onClickDelete={() => {}} />
     )
     const rendered = renderer.getRenderOutput()
     const expected = (
@@ -527,14 +532,20 @@ describe('QuestionList', () => {
         <Question questionId={12}
                   index={1}
                   answer="Foo"
+                  isEditActivated={false}
+                  onClickDelete={() => {}}
                   text="This is the first question." />
         <Question questionId={14}
                   index={2}
                   answer="Bar"
+                  isEditActivated={false}
+                  onClickDelete={() => {}}
                   text="This is the second question." />
         <Question questionId={22}
                   index={3}
                   answer="Baz"
+                  isEditActivated={false}
+                  onClickDelete={() => {}}
                   text="This is the third question." />
       </div>
     )
@@ -693,6 +704,7 @@ describe('ThreadView', () => {
     const rendered = renderer.getRenderOutput()
     const expected = (
       <div className="threadView">
+        <h2 />
         <ul className="nav nav-tabs" role="tablist">
           <li role="presentation" className="active">
             <a href="/#threads/1" role="tab" data-toggle="tab">
@@ -705,9 +717,128 @@ describe('ThreadView', () => {
             </a>
           </li>
         </ul>
-        <QuestionList questions={[]} />
+        <QuestionList questions={[]}
+                      isEditActivated={false}
+                      onClickDelete={() => {}} />
+      </div>
+    )
+    expect(rendered).toEqualJSX(expected)
+  })
+
+  it('render mode="requests"', () => {
+    renderer.render(<ThreadView threadId={1} mode="requests" />)
+    const rendered = renderer.getRenderOutput()
+    const expected = (
+      <div className="threadView">
+        <ul className="nav nav-tabs" role="tablist">
+          <li role="presentation" className="active">
+            <a href="/#threads/1" role="tab" data-toggle="tab">
+              Questions (0)
+            </a>
+          </li>
+          <li role="presentation" className="">
+            <a href="#threads/1/requests" role="tab" data-toggle="tab">
+              Requests (0)
+            </a>
+          </li>
+        </ul>
+        <RequestList requests={[]} />
       </div>
     )
     expect(rendered).toEqualJSX(expected)
   })
 })
+
+/*
+describe('RequestedListItem', () => {
+  let renderer = null
+
+  beforeEach(() => {
+    renderer = TestUtils.createRenderer()
+  })
+
+  it('render', () => {
+    renderer.render(
+      <RequestListItem threadId={1}
+                       requestId={123}
+                       index={12}
+                       creater="Foo"
+                       timestamp={1452215370864} />
+    )
+    const rendered = renderer.getRenderOutput()
+    const expected = (
+      <tr className="requestListItem">
+        <td><a href="/#threads/1/requests/123">Request 12</a></td>
+        <td><a href="/#users/Foo">Foo</a></td>
+        <td>2016/01/08 10:09:30</td>
+      </tr>
+    )
+    expect(rendered).toEqualJSX(expected)
+  })
+})
+
+describe('RequestedList', () => {
+  let renderer = null
+  const items = [
+    {
+      threadId: 1,
+      requestId: 2,
+      _i: 3,
+      userId: 'Foo',
+      timestamp: 1452215370864
+    },
+    {
+      threadId: 4,
+      requestId: 5,
+      _i: 6,
+      userId: 'Bar',
+      timestamp: 1452215370864
+    },
+    {
+      threadId: 7,
+      requestId: 8,
+      _i: 9,
+      userId: 'Baz',
+      timestamp: 1452215370864
+    }
+  ]
+
+  beforeEach(() => {
+    renderer = TestUtils.createRenderer()
+  })
+
+  it('render', () => {
+    renderer.render(
+      <ThreadList items={items} />
+    )
+    const rendered = renderer.getRenderOutput()
+    const expected = (
+      <table className="table requestList">
+        <tbody>
+          <tr>
+            <th>Title</th>
+            <th>Created by</th>
+            <th>Created At</th>
+          </tr>
+          <RequestListItem threadId={1}
+                           requestId={2}
+                           index={3}
+                           creater="Foo"
+                           timestamp={1452215370864} />
+          <RequestListItem threadId={4}
+                           requestId={5}
+                           index={6}
+                           creater="Bar"
+                           timestamp={1452215370864} />
+          <RequestListItem threadId={7}
+                           requestId={8}
+                           index={9}
+                           creater="Baz"
+                           timestamp={1452215370864} />
+        </tbody>
+      </table>
+    )
+    expect(rendered).toEqualJSX(expected)
+  })
+})
+*/
