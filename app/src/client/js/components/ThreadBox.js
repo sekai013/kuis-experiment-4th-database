@@ -29,7 +29,7 @@ module.exports = class ThreadBox extends React.Component {
         this.setState({ items: items })
       },
       error: (xhr, status, error) => {
-        console.error(status, error.toString())
+        console.error(xhr.status, error.toString())
         this.setState({
           message: 'Fetching Threads: Failed ;-( Please try again later.',
           messageType: 'warning'
@@ -38,12 +38,11 @@ module.exports = class ThreadBox extends React.Component {
     })
   }
 
-  onSubmitForm (childProps) {
-    console.log(childProps)
+  onSubmitForm (childState) {
     ajax({
       url: `http://${location.hostname}:${location.port}/api/threads/create`,
       method: 'POST',
-      data: { title: childProps.title },
+      data: { title: childState.title },
       success: (data) => {
         this.setState({ message: 'Created!', messageType: 'success' })
         window.location = `/#threads/${data.threadId}`
@@ -98,7 +97,7 @@ module.exports = class ThreadBox extends React.Component {
                      {this.state.message}
                    </div>
                  </div>)
-              : ""
+              : null
 
     return (
       <div className="threadBox">

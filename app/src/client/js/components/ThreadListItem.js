@@ -38,7 +38,7 @@ module.exports = class ThreadListItem extends React.Component {
       </td>
     )
     return (
-      <tr className="question">
+      <tr className="threadListItem">
         <td><a href={`/#threads/${this.props.threadId}`}>{this.props.title}</a></td>
         <td><a href={`/#users/${this.props.creater}`}>{this.props.creater}</a></td>
         <td>{time}</td>

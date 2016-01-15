@@ -21,16 +21,28 @@ module.exports  = class ThreadForm extends React.Component {
 
   render () {
     return (
-      <form className="threadForm" onSubmit={this.onSubmitForm.bind(this)}>
-        <div className="form-group">
-          <label>Title</label>
-          <input type="text"
-                 className="form-control"
-                 value={this.state.title}
-                 onChange={this.onChangeTitle.bind(this)} />
+      <div className="panel panel-default">
+        <div className="panel-heading">
+          <h3 className="panel-title">
+            {this.props.isEditMode ? 'Edit' : 'Create'} Thread
+          </h3>
         </div>
-        <button type="submit" className="btn btn-default">Create</button>
-      </form>
+        <div className="panel-body">
+          <form className="threadForm form-inline"
+                onSubmit={this.onSubmitForm.bind(this)}>
+            <div className="form-group">
+              <label>Title</label>
+              <input type="text"
+                     className="form-control"
+                     value={this.state.title}
+                     onChange={this.onChangeTitle.bind(this)} />
+            </div>
+            <button type="submit" className="btn btn-default">
+              {this.props.isEditMode ? 'Done' : 'Create'}
+            </button>
+          </form>
+        </div>
+      </div>
     )
   }
 }
