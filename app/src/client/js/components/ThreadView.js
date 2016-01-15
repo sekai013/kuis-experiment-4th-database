@@ -55,14 +55,16 @@ module.exports = class ThreadView extends React.Component {
     this.fetchRequests(nextProps)
   }
 
-  onSubmitForm (childState) {
+  onSubmitForm (childState, callback) {
     ajax({
       url: `http://${location.hostname}:${location.port}/api/threads/${this.props.threadId}/questions/create`,
       method: 'POST',
       data: { text: childState.text, answer: childState.answer },
       success: (data) => {
         this.setState({ message: 'Created!', messageType: 'success' })
-        this.fetchRequests()
+        this.fetchQuestions()
+        callback()
+        setTimeout(() => { this.setState({ message: '', messageType: '' }) }, 1000)
       },
       error: (xhr, status, error) => {
         console.error(xhr.status, error.toString())

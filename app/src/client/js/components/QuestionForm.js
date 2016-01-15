@@ -22,7 +22,12 @@ module.exports = class QuestionForm extends React.Component {
       // post to server
     } else {
       if (typeof this.props.onSubmitForm !== 'function') return
-      this.props.onSubmitForm(this.state)
+      this.props.onSubmitForm(this.state, () => {
+        this.setState({
+          text: '',
+          answer: ''
+        })
+      })
     }
   }
 
