@@ -15,6 +15,12 @@ const Question = require('../client/js/components/Question')
 const QuestionList = require('../client/js/components/QuestionList')
 const QuestionForm = require('../client/js/components/QuestionForm')
 const ThreadView = require('../client/js/components/ThreadView')
+const RequestListItem = require('../client/js/components/RequestListItem')
+const RequestList = require('../client/js/components/RequestList')
+const Comment = require('../client/js/components/Comment')
+const CommentList = require('../client/js/components/CommentList')
+const CommentForm = require('../client/js/components/CommentForm')
+const RequestView = require('../client/js/components/RequestView')
 
 describe('ThreadListItem', () => {
   let renderer = null
@@ -651,26 +657,6 @@ describe('QuestionForm', () => {
     expect(rendered.state.answer).toEqual('Foo')
   })
 
-  it('onSubmitForm isEditMode=true', () => {
-    const spy = sinon.spy()
-    const rendered = TestUtils.renderIntoDocument(
-      <QuestionForm isEditMode={true} onSubmitForm={spy}/>
-    )
-    const form = TestUtils.scryRenderedDOMComponentsWithTag(rendered, 'form')
-    const textarea = TestUtils.scryRenderedDOMComponentsWithTag(rendered, 'textarea')
-    const input = TestUtils.scryRenderedDOMComponentsWithTag(rendered, 'input')
-
-    expect(spy.called).toEqual(false)
-    TestUtils.Simulate.submit(form[0])
-    expect(spy.called).toEqual(false)
-    TestUtils.Simulate.change(textarea[0], { target: { value: 'Foo' } })
-    TestUtils.Simulate.submit(form[0])
-    expect(spy.called).toEqual(false)
-    TestUtils.Simulate.change(input[0], { target: { value: 'Foo' } })
-    TestUtils.Simulate.submit(form[0])
-    expect(spy.called).toEqual(false)
-  })
-
   it('onSubmitForm isEditMode=false', () => {
     const spy = sinon.spy()
     const rendered = TestUtils.renderIntoDocument(
@@ -717,9 +703,11 @@ describe('ThreadView', () => {
             </a>
           </li>
         </ul>
-        <QuestionList questions={[]}
-                      isEditActivated={false}
-                      onClickDelete={() => {}} />
+        <div>
+          <QuestionList questions={[]}
+                        isEditActivated={false}
+                        onClickDelete={() => {}} />
+        </div>
       </div>
     )
     expect(rendered).toEqualJSX(expected)
@@ -730,54 +718,79 @@ describe('ThreadView', () => {
     const rendered = renderer.getRenderOutput()
     const expected = (
       <div className="threadView">
+        <h2 />
         <ul className="nav nav-tabs" role="tablist">
-          <li role="presentation" className="active">
+          <li role="presentation" className="">
             <a href="/#threads/1" role="tab" data-toggle="tab">
               Questions (0)
             </a>
           </li>
-          <li role="presentation" className="">
+          <li role="presentation" className="active">
             <a href="#threads/1/requests" role="tab" data-toggle="tab">
               Requests (0)
             </a>
           </li>
         </ul>
-        <RequestList requests={[]} />
+        <div>
+          <RequestList requests={[]} />
+        </div>
       </div>
     )
     expect(rendered).toEqualJSX(expected)
   })
 })
 
-/*
-describe('RequestedListItem', () => {
+describe('RequestListItem', () => {
   let renderer = null
 
   beforeEach(() => {
     renderer = TestUtils.createRenderer()
   })
 
-  it('render', () => {
+  it('render isClosed=true', () => {
     renderer.render(
       <RequestListItem threadId={1}
                        requestId={123}
                        index={12}
                        creater="Foo"
+                       isClosed={true}
                        timestamp={1452215370864} />
     )
     const rendered = renderer.getRenderOutput()
     const expected = (
       <tr className="requestListItem">
-        <td><a href="/#threads/1/requests/123">Request 12</a></td>
+        <td><a href="/#threads/1/requests/12">Request 12</a></td>
         <td><a href="/#users/Foo">Foo</a></td>
         <td>2016/01/08 10:09:30</td>
+        <td>Closed</td>
+      </tr>
+    )
+    expect(rendered).toEqualJSX(expected)
+  })
+
+  it('render isClosed=false', () => {
+    renderer.render(
+      <RequestListItem threadId={1}
+                       requestId={123}
+                       index={12}
+                       creater="Foo"
+                       isClosed={false}
+                       timestamp={1452215370864} />
+    )
+    const rendered = renderer.getRenderOutput()
+    const expected = (
+      <tr className="requestListItem">
+        <td><a href="/#threads/1/requests/12">Request 12</a></td>
+        <td><a href="/#users/Foo">Foo</a></td>
+        <td>2016/01/08 10:09:30</td>
+        <td>Open</td>
       </tr>
     )
     expect(rendered).toEqualJSX(expected)
   })
 })
 
-describe('RequestedList', () => {
+describe('RequestList', () => {
   let renderer = null
   const items = [
     {
@@ -785,21 +798,24 @@ describe('RequestedList', () => {
       requestId: 2,
       _i: 3,
       userId: 'Foo',
-      timestamp: 1452215370864
+      timestamp: 1452215370864,
+      isClosed: false
     },
     {
       threadId: 4,
       requestId: 5,
       _i: 6,
       userId: 'Bar',
-      timestamp: 1452215370864
+      timestamp: 1452215370864,
+      isClosed: true
     },
     {
       threadId: 7,
       requestId: 8,
       _i: 9,
       userId: 'Baz',
-      timestamp: 1452215370864
+      timestamp: 1452215370864,
+      isClosed: false
     }
   ]
 
@@ -809,36 +825,209 @@ describe('RequestedList', () => {
 
   it('render', () => {
     renderer.render(
-      <ThreadList items={items} />
+      <RequestList requests={items} />
     )
     const rendered = renderer.getRenderOutput()
     const expected = (
-      <table className="table requestList">
-        <tbody>
-          <tr>
-            <th>Title</th>
-            <th>Created by</th>
-            <th>Created At</th>
-          </tr>
-          <RequestListItem threadId={1}
-                           requestId={2}
-                           index={3}
-                           creater="Foo"
-                           timestamp={1452215370864} />
-          <RequestListItem threadId={4}
-                           requestId={5}
-                           index={6}
-                           creater="Bar"
-                           timestamp={1452215370864} />
-          <RequestListItem threadId={7}
-                           requestId={8}
-                           index={9}
-                           creater="Baz"
-                           timestamp={1452215370864} />
-        </tbody>
-      </table>
+      <div className="panel panel-default">
+        <div className="panel-heading">
+          Show Closed Request <input type="checkbox" onChange={() => {}} />
+        </div>
+        <table className="table requestList">
+          <tbody>
+            <tr>
+              <th>Request</th>
+              <th>Created by</th>
+              <th>Created At</th>
+              <th>Status</th>
+            </tr>
+            <RequestListItem threadId={1}
+                             requestId={2}
+                             index={3}
+                             creater="Foo"
+                             isClosed={false}
+                             timestamp={1452215370864} />
+            <RequestListItem threadId={7}
+                             requestId={8}
+                             index={9}
+                             creater="Baz"
+                             isClosed={false}
+                             timestamp={1452215370864} />
+          </tbody>
+        </table>
+      </div>
     )
     expect(rendered).toEqualJSX(expected)
   })
 })
-*/
+
+describe('Comment', () => {
+  let renderer = null
+
+  beforeEach(() => {
+    renderer = TestUtils.createRenderer()
+  })
+
+  it('render', () => {
+    renderer.render(<Comment author="Foo" text="testes" timestamp={1452215370864}/>)
+    const rendered = renderer.getRenderOutput()
+    const expected = (
+      <div className="comment panel panel-default">
+        <div className="panel-heading">
+          <h3 className="panel-title">
+            <a href="/#users/Foo">Foo</a>
+          </h3>
+          2016/01/08 10:09:30
+        </div>
+        <div className="panel-body">
+          <p>testes</p>
+        </div>
+      </div>
+    )
+    expect(rendered).toEqualJSX(expected)
+  })
+})
+
+describe('CommentList', () => {
+  let renderer = null
+  const items = [
+    {
+      userId: 'Foo',
+      text: 'hey',
+      timestamp: 1452215370864,
+      commentId: 1
+    },
+    {
+      userId: 'Bar',
+      text: 'hoy',
+      timestamp: 1452215370864,
+      commentId: 2
+    }
+  ]
+
+  beforeEach(() => {
+    renderer = TestUtils.createRenderer()
+  })
+
+  it('render', () => {
+    renderer.render(<CommentList comments={items} />)
+    const rendered = renderer.getRenderOutput()
+    const expected = (
+      <div className="commentList">
+        <Comment author="Foo" text="hey" timestamp={1452215370864} />
+        <Comment author="Bar" text="hoy" timestamp={1452215370864} />
+      </div>
+    )
+    expect(rendered).toEqualJSX(expected)
+  })
+})
+
+describe('CommentForm', () => {
+  let renderer = null
+
+  beforeEach(() => {
+    renderer = TestUtils.createRenderer()
+  })
+
+  it('render isUser=true', () => {
+    renderer.render(
+      <CommentForm isUser={true} onSubmitForm={() => {}} />
+    )
+    const rendered = renderer.getRenderOutput()
+    const expected = (
+      <div className="panel panel-default">
+        <div className="panel-heading">
+          <h3 className="panel-title">Post Comment</h3>
+        </div>
+        <div className="panel-body">
+          <form className="commentForm" onSubmit={() => {}}>
+            <div>
+              <div className="form-group">
+                <label>Text</label>
+                <textarea className="form-control"
+                          onChange={() => {}}
+                          value="" />
+              </div>
+              <button type="submit" className="btn btn-default">Post</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    )
+    expect(rendered).toEqualJSX(expected)
+  })
+
+  it('render isUser=false', () => {
+    renderer.render(
+      <CommentForm isUser={false} onSubmitForm={() => {}} />
+    )
+    const rendered = renderer.getRenderOutput()
+    const expected = (
+      <div className="panel panel-default">
+        <div className="panel-heading">
+          <h3 className="panel-title">Post Comment</h3>
+        </div>
+        <div className="panel-body">
+          <form className="commentForm" onSubmit={() => {}}>
+            <p>To post a comment, please login <a href="/login">here</a>.</p>
+          </form>
+        </div>
+      </div>
+    )
+    expect(rendered).toEqualJSX(expected)
+  })
+})
+
+describe('RequestView', () => {
+  let renderer = null
+
+  beforeEach(() => {
+    renderer = TestUtils.createRenderer()
+  })
+
+  it('render isCreater=true', () => {
+    renderer.render(
+      <RequestView threadId={1} requestId={1} isCreater={true} isUser={true} />
+    )
+    const rendered = renderer.getRenderOutput()
+    const expected = (
+      <div className="requestView">
+        <Question isRequest={true} text="" answer="" isEditActivated={false} />
+        <CommentList comments={[]} />
+        <div className="center-block">
+          <div className="row">
+            <div className="col-sm-1 col-sm-offset-5">
+              <button className="btn btn-default btn-lg center-block btn-merge"
+                      onClick={() => {}}>
+                Merge
+              </button>
+            </div>
+            <div className="col-sm-1">
+              <button className="btn btn-default btn-lg center-block btn-close"
+                      onClick={() => {}}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+        <CommentForm isUser={true} onSubmitForm={() => {}} />
+      </div>
+    )
+    expect(rendered).toEqualJSX(expected)
+  })
+
+  it('render isCreater=false', () => {
+    renderer.render(
+      <RequestView threadId={1} requestId={1} isCreater={false} isUser={true} />
+    )
+    const rendered = renderer.getRenderOutput()
+    const expected = (
+      <div className="requestView">
+        <Question isRequest={true} text="" answer="" isEditActivated={false} />
+        <CommentList comments={[]} />
+        <CommentForm isUser={true} onSubmitForm={() => {}} />
+      </div>
+    )
+    expect(rendered).toEqualJSX(expected)
+  })
+})

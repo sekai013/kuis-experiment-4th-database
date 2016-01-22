@@ -66,6 +66,8 @@ router.get('/login', passport.authenticate('twitter'))
 
 router.get('/logout', function *() {
   this.session = null
+  passport.id = null
+  passport.iconUrl = null
   this.redirect('/')
 })
 
@@ -119,7 +121,7 @@ router.get('/api/threads/:id/questions', getDB, function *() {
       'SELECT userId from create_thread where threadId = ?',
       [this.params.id]
     )
-    const questions = yield this.DB.all('SELECT * FROM (SELECT * FROM threads WHERE threadId = ?) NATURAL JOIN thread_question NATURAL JOIN (SELECT * FROM questions WHERE isRequest = 0 AND _i > 0)', [this.params.id])
+    const questions = yield this.DB.all('SELECT * FROM (SELECT * FROM threads WHERE threadId = ?) NATURAL JOIN thread_question NATURAL JOIN (SELECT * FROM questions WHERE isRequest = 0 AND _i > 0) ORDER BY _i', [this.params.id])
 
     if (thread) {
       this.body = {
@@ -150,7 +152,7 @@ router.post('/api/threads/:id/questions/create', auth, getDB, function *() {
       const questionId = questions.length + 1
       this.questionId = questionId
       const questionsInThread = yield this.DB.all(
-        'SELECT * FROM thread_question WHERE threadId = ?',
+        'SELECT * FROM thread_question NATURAL JOIN questions WHERE threadId = ? AND isRequest = 0',
         [this.params.id]
       )
       const index = questionsInThread.length + 1
@@ -212,6 +214,10 @@ router.post('/api/threads/:id/questions/:index/delete', auth, getDB, function *(
       yield stmt2.run(target.questionId)
       stmt2.finalize()
       yield this.DB.run(
+        'DELETE FROM question_request WHERE questionId = ?',
+        [target.questionId]
+      )
+      yield this.DB.run(
         'UPDATE questions SET questionId = questionId - 1 WHERE questionId > ?',
         [target.questionId]
       )
@@ -221,6 +227,10 @@ router.post('/api/threads/:id/questions/:index/delete', auth, getDB, function *(
       )
       yield this.DB.run(
         'UPDATE thread_question SET questionId = questionId - 1 WHERE questionId > ?',
+        [target.questionId]
+      )
+      yield this.DB.run(
+        'UPDATE question_request SET questionId = questionId - 1 WHERE questionId > ?',
         [target.questionId]
       )
       this.body = { status: 200 }
@@ -329,6 +339,281 @@ router.post('/api/questions/:id/edit', auth, getDB, function *() {
         [this.question.answer, this.params.id]
       )
     }
+  }
+})
+
+router.get('/api/threads/:id/requests', getDB, function * () {
+  try {
+    const requests = yield this.DB.all(
+      'SELECT * FROM requests NATURAL JOIN thread_request NATURAL JOIN send_request WHERE threadId = ? ORDER BY timestamp DESC',
+      [this.params.id]
+    )
+    this.body = {
+      status: 200,
+      requests: requests,
+      isUser: !!passport.id
+    }
+  } catch (error) {
+    console.error(error.toString());
+    this.status = 500
+    this.body = { status: 500, message: 'Internal Server Error' }
+  }
+})
+
+router.get('/api/threads/:id/requests/:index', getDB, function * () {
+  try {
+    const request = yield this.DB.get(
+      'SELECT * FROM requests NATURAL JOIN thread_request WHERE threadId = ? and _i = ?',
+      [this.params.id, this.params.index]
+    )
+
+    if (!request) {
+      this.status = 404
+      this.body = { status: 404, message: 'Not Found' }
+      return
+    }
+
+    const question = yield this.DB.get(
+      'SELECT * FROM questions NATURAL JOIN question_request NATURAL JOIN questions WHERE requestId = ?',
+      [request.requestId]
+    )
+
+    const comments = yield this.DB.all(
+      'SELECT * FROM comments NATURAL JOIN request_comment NATURAL JOIN post_comment WHERE requestId = ?',
+      [request.requestId]
+    )
+
+    this.body = {
+      status: 200,
+      question: question,
+      comments: comments
+    }
+
+  } catch (error) {
+    console.error(error.toString());
+    this.status = 500
+    this.body = { status: 500, message: 'Internal Server Error' }
+  }
+})
+
+router.get('/api/requests/:id', getDB, function * () {
+  try {
+    const request = yield this.DB.get(
+      'SELECT * FROM requests WHERE requestId = ?',
+      [this.params.id]
+    )
+
+    if (!request) {
+      this.status = 404
+      this.body = { status: 404, message: 'Not Found' }
+      return
+    }
+
+    const question = yield this.DB.get(
+      'SELECT * FROM questions NATURAL JOIN question_request NATURAL JOIN questions WHERE requestId = ?',
+      [this.params.id]
+    )
+
+    const comments = yield this.DB.all(
+      'SELECT * FROM comments NATURAL JOIN request_comment NATURAL JOIN post_comment WHERE requestId = ?',
+      [this.params.id]
+    )
+
+    this.body = {
+      status: 200,
+      question: question,
+      comments: comments
+    }
+
+  } catch (error) {
+    console.error(error.toString());
+    this.status = 500
+    this.body = { status: 500, message: 'Internal Server Error' }
+  }
+})
+
+router.post('/api/threads/:id/requests/create', auth, getDB, function *() {
+  try {
+    const requests = yield this.DB.all('SELECT * FROM requests')
+    const requestId= requests.length + 1
+    this.requestId = requestId
+    const requestsInThread = yield this.DB.all(
+      'SELECT * FROM thread_request WHERE threadId = ?',
+      [this.params.id]
+    )
+    const index = requestsInThread.length + 1
+    const questions = yield this.DB.all('SELECT * FROM questions')
+    const questionId = questions.length + 1
+
+    yield this.DB.run(
+      'INSERT INTO questions VALUES(?, ?, ?, ?, ?)',
+      [questionId, this.request.body.text, this.request.body.answer, 0, 1]
+    )
+    const stmt1 = yield this.DB.prepare(
+      'INSERT INTO requests VALUES(?, ?, ?)'
+    )
+    yield stmt1.run(requestId, index, 0)
+    stmt1.finalize()
+    yield this.DB.run(
+      'INSERT INTO thread_question VALUES(?, ?)',
+      [this.params.id, questionId]
+    )
+    yield this.DB.run(
+      'INSERT INTO question_request VALUES(?, ?)',
+      [questionId, requestId]
+    )
+    yield this.DB.run(
+      'INSERT INTO send_request VALUES(?, ?, ?)',
+      [passport.id, requestId, Date.now()]
+    )
+    const stmt2 = yield this.DB.prepare('INSERT INTO thread_request VALUES(?, ?)')
+    yield stmt2.run(this.params.id, requestId)
+    stmt2.finalize()
+    this.body = { status: 200 }
+  } catch (error) {
+    console.error(error.toString());
+    this.status = 500
+    this.body = { status: 500, message: 'Internal Server Error' }
+  }
+})
+
+router.post('/api/threads/:id/requests/:index/comments/create', auth, getDB, function *() {
+  try {
+
+    const request = yield this.DB.get('SELECT * FROM requests NATURAL JOIN thread_request WHERE threadId = ? AND _i = ?', [this.params.id, this.params.index])
+
+    if (! request) {
+      this.status = 404
+      this.body = {
+        status: 404,
+        message: 'Target Request is not found'
+      }
+    }
+
+    const comments = yield this.DB.all('SELECT * FROM comments')
+    const commentId = comments.length + 1
+    const commentsInRequest = yield this.DB.all(
+      'SELECT * FROM request_comment WHERE requestId = ?',
+      [request.requestId]
+    )
+    const index = commentsInRequest.length + 1
+
+    yield this.DB.run(
+      'INSERT INTO comments VALUES(?, ?, ?)',
+      [commentId, index, this.request.body.text]
+    )
+    yield this.DB.run(
+      'INSERT INTO post_comment VALUES(?, ?, ?)',
+      [passport.id, commentId, Date.now()]
+    )
+    yield this.DB.run(
+      'INSERT INTO request_comment VALUES(?, ?)',
+      [request.requestId, commentId]
+    )
+    this.body = { status: 200 }
+  } catch (error) {
+    console.error(error.toString());
+    this.status = 500
+    this.body = { status: 500, message: 'Internal Server Error' }
+  }
+})
+
+router.post('/api/threads/:id/requests/:index/merge', auth, getDB, function *() {
+  try {
+
+    const thread = yield this.DB.get(
+      'SELECT * FROM threads NATURAL JOIN create_thread WHERE threadId = ?',
+      [this.params.id]
+    )
+
+    if (! thread) {
+      this.status = 404
+      this.body = {
+        status: 404,
+        message: 'Target Thread is not found'
+      }
+    }
+
+    if (passport.id !== thread.userId) {
+      this.status = 401
+      this.body = { status: 401, message: 'Authorization Required' }
+    }
+
+    const request = yield this.DB.get('SELECT * FROM requests NATURAL JOIN thread_request WHERE threadId = ? AND _i = ?', [this.params.id, this.params.index])
+
+    if (! request) {
+      this.status = 404
+      this.body = {
+        status: 404,
+        message: 'Target Request is not found'
+      }
+    }
+
+    const questions = yield this.DB.all('SELECT * FROM questions NATURAL JOIN thread_question WHERE threadId = ? AND _i > 0', [this.params.id])
+    const question = yield this.DB.get('SELECT * FROM question_request NATURAL JOIN questions WHERE requestId = ?', [request.requestId])
+
+    yield this.DB.run(
+      'UPDATE requests SET isClosed = 1 WHERE requestId = ?',
+      [request.requestId]
+    )
+    yield this.DB.run(
+      'UPDATE questions SET isRequest = 0 WHERE questionId = ?',
+      [question.questionId]
+    )
+    yield this.DB.run(
+      'UPDATE questions SET _i = ? WHERE questionId = ?',
+      [questions.length + 1, question.questionId]
+    )
+    this.body = { status: 200 }
+  } catch (error) {
+    console.error(error.toString());
+    this.status = 500
+    this.body = { status: 500, message: 'Internal Server Error' }
+  }
+})
+
+router.post('/api/threads/:id/requests/:index/close', auth, getDB, function *() {
+  try {
+
+    const thread = yield this.DB.get(
+      'SELECT * FROM threads NATURAL JOIN create_thread WHERE threadId = ?',
+      [this.params.id]
+    )
+
+    if (! thread) {
+      this.status = 404
+      this.body = {
+        status: 404,
+        message: 'Target Thread is not found'
+      }
+    }
+
+    if (passport.id !== thread.userId) {
+      this.status = 401
+      this.body = { status: 401, message: 'Authorization Required' }
+    }
+
+    const request = yield this.DB.get('SELECT * FROM requests NATURAL JOIN thread_request WHERE threadId = ? AND _i = ?', [this.params.id, this.params.index])
+
+    if (! request) {
+      this.status = 404
+      this.body = {
+        status: 404,
+        message: 'Target Request is not found'
+      }
+    }
+
+    yield this.DB.run(
+      'UPDATE requests SET isClosed = 1 WHERE requestId = ?',
+      [request.requestId]
+    )
+
+    this.body = { status: 200 }
+
+  } catch (error) {
+    console.error(error.toString());
+    this.status = 500
+    this.body = { status: 500, message: 'Internal Server Error' }
   }
 })
 

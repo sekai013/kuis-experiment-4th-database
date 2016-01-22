@@ -42,6 +42,11 @@ module.exports = class Question extends React.Component {
     const deleteBtn = this.props.isEditActivated
                     ? <button className="btn btn-default" onClick={this.onClickDelete.bind(this)}>Delete</button>
                     : null
+    const btnClassNames = {
+      '◯': 'btn-success',
+      '✕': 'btn-warning'
+    }
+    const btnClassName = btnClassNames[this.state.symbol] || 'btn-default'
     return (
       <div className="question panel panel-default">
         <div className="panel-heading">
@@ -54,12 +59,12 @@ module.exports = class Question extends React.Component {
           <div className="row">
             <div className="col-sm-6">
               <input type="text"
-                     className="form-control"
+                     className="form-control answer"
                      onChange={this.onChangeAnswer.bind(this)}
                      onBlur={this.onBlurAnswer.bind(this)} />
             </div>
             <div className="col-sm-3">
-              <button className="btn btn-default" disabled="disabled">
+              <button className={`btn ${btnClassName}`} disabled="disabled">
                 {this.state.symbol}
               </button>
             </div>

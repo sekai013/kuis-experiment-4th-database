@@ -4,6 +4,10 @@ const ReactDOM = require('react-dom')
 
 class Router {
 
+  constructor () {
+    this.hash = []
+  }
+
   get (hash, func) {
     const eventListener = (event) => {
       const match = this.match(location.hash, hash)
@@ -12,6 +16,18 @@ class Router {
       }
     }
 
+    this.hash.push(hash)
+    window.addEventListener('hashchange', eventListener)
+    eventListener()
+  }
+
+  defaultRoute (hash) {
+    const eventListener = (event) => {
+      for (let i in this.hash) {
+        if (this.match(location.hash, this.hash[i]).result) return
+      }
+      window.location = hash
+    }
     window.addEventListener('hashchange', eventListener)
     eventListener()
   }

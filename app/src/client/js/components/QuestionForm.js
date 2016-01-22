@@ -9,21 +9,32 @@ module.exports = class QuestionForm extends React.Component {
     this.state = { text: this.props.text || '', answer: this.props.answer || '' }
   }
 
+  fetchQuestion (props) {
+    props = props || this.props
+    ajax({
+      url: `http://${location.hostname}:${location.port}/api/questions/${props.questionId}`,
+      dataType: 'json',
+      success: (data) => {
+        this.setState({
+          text: data.question.text,
+          answer: data.question.answer
+        })
+      },
+      error: (xhr, status, error) => {
+        console.error(xhr.status, error.toString())
+      }
+    })
+  }
+
   componentDidMount () {
     if (this.props.isEditMode) {
-      ajax({
-        url: `http://${location.hostname}:${location.port}/api/questions/${this.props.questionId}`,
-        dataType: 'json',
-        success: (data) => {
-          this.setState({
-            text: data.question.text,
-            answer: data.question.answer
-          })
-        },
-        error: (xhr, status, error) => {
-          console.error(xhr.status, error.toString())
-        }
-      })
+      this.fetchQuestion()
+    }
+  }
+
+  componentWillReceiveProps (nextProps) {
+    if (this.props.isEditMode) {
+      this.fetchQuestion()
     }
   }
 
@@ -45,6 +56,7 @@ module.exports = class QuestionForm extends React.Component {
         dataType: 'json',
         data: this.state,
         success: (data) => {
+          this.setState({ text: '', answer: '' })
           window.location = `/#threads/${data.threadId}`
         },
         error: (xhr, status, error) => {
@@ -67,7 +79,7 @@ module.exports = class QuestionForm extends React.Component {
       <div className="panel panel-default">
         <div className="panel-heading">
           <h3 className="panel-title">
-            {this.props.isEditMode ? 'Edit' : 'Create'} Question
+            {this.props.isEditMode ? 'Edit' : 'Create'} {this.props.isRequest ? 'Request' : 'Question'}
           </h3>
         </div>
         <div className="panel-body">
